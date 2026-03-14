@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}YSWS{% endblock %} | Hack Club</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/smart_dinosaur_docs.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function(){var d=localStorage.getItem('darkMode');if(d==='1')document.documentElement.classList.add('dark');})();
+    </script>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="workspace">
+                <a href="https://hackclub.com" class="workspace-name workspace-name-link" rel="noopener">Hack Club</a>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">Channels</span>
+                    <ul class="channel-list">
+                        <li class="channel channel-internal {% if request.endpoint == 'app_network' %}active{% endif %}"><a href="{{ url_for('app_network') }}"># network</a></li>
+                        <li class="channel channel-internal {% if request.endpoint == 'app_network_faq' %}active{% endif %}"><a href="{{ url_for('app_network_faq') }}"># network-faq</a></li>
+                        <li class="channel channel-internal {% if request.endpoint == 'app_network_announcements' %}active{% endif %}"><a href="{{ url_for('app_network_announcements') }}"># network-announcements</a></li>
+                        <li class="channel channel-internal {% if request.endpoint == 'app_what_people_are_making' %}active{% endif %}"><a href="{{ url_for('app_what_people_are_making') }}"># what-people-are-making</a></li>
+                        {% for ch in external_channels %}
+                        <li class="channel channel-external"><a href="{{ ch.get('url') or slack_base + '/archives/' + (ch.get('id') or ch.slug) }}" target="_blank" rel="noopener"># {{ ch.label }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <span class="nav-section-title">Direct Messages</span>
+                    <ul class="dm-list" id="dm-list">
+                        {% for slug, display_name in hardcoded_dm_names.items() %}
+                        <li class="dm {% if active_dm == slug %}active{% endif %}" data-dm-id="{{ slug }}">
+                            {% if avatars.get(display_name) %}
+                            <img class="dm-avatar dm-avatar-img" src="{{ url_for('static', filename=avatars[display_name]) }}" alt="" />
+                            {% else %}
+                            <span class="dm-avatar dm-avatar-initial" title="{{ display_name }}">{{ display_name[0]|upper if display_name else '?' }}</span>
+                            {% endif %}
+                            <a href="{{ url_for('app_dm', user_id=slug) }}" class="dm-name">{{ display_name }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <span class="dm-list-live-title" id="dm-live-title" style="display: none;">Online now</span>
+                    <ul class="dm-list dm-list-live" id="dm-live-list"></ul>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <span class="theme-icon theme-icon-sun" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    </span>
+                    <span class="theme-icon theme-icon-sun-fill" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                    </span>
+                </button>
+                <a href="{{ url_for('auth_logout') }}" class="sidebar-logout">Log out</a>
+            </div>
+        </aside>
+        <button type="button" class="sidebar-toggle" aria-label="Toggle sidebar"></button>
+        <a href="https://forms.fillout.com/t/6zQ2MjMUo8us" class="submit-bar" id="submitBar" target="_blank" rel="noopener">RSVP Now!</a>
+        <main class="chat-main">
+            {% block main %}{% endblock %}
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
