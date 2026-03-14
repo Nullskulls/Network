@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Network{% endblock %}
+{% block main %}
+<header class="chat-header">
+    <div class="chat-header-info">
+        <span class="chat-title"># network</span>
+        <span class="chat-status">Orpheus · online</span>
+    </div>
+</header>
+<div class="messages-container">
+    <div class="messages" id="network-messages">
+        <div class="message-wrapper orpheus">
+            <div class="message visible">
+                <div class="message-body">
+                    <span class="message-sender">Orpheus</span>
+                    <p class="message-text">Have you heard about network?</p>
+                </div>
+            </div>
+        </div>
+        <div id="network-conversation"></div>
+        <div id="network-reply-area"></div>
+    </div>
+</div>
+<script>
+window.NETWORK_REPLIES = {{ network_replies | tojson }};
+window.NETWORK_FIRST_QUESTION_OPTIONS = {{ network_first_question | tojson }};
+window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/network.js') }}"></script>
+{% endblock %}
+{% block scripts %}{% endblock %}
