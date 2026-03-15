@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ other_name }}{% endblock %}
+{% block main %}
+<header class="chat-header">
+    <div class="chat-header-info">
+        <span class="chat-title">{{ other_name }}</span>
+        <span class="chat-status">online</span>
+    </div>
+</header>
+<div class="chat-body chat-body-with-compose">
+    <div class="messages-container" id="dm-messages-container">
+        <div class="messages" id="dm-messages"></div>
+    </div>
+    <div class="dm-compose">
+        <form id="dm-form" class="dm-compose-form">
+            <input type="text" id="dm-input" class="dm-input" placeholder="Message {{ other_name }}..." autocomplete="off">
+            <button type="submit" class="dm-send-btn">Send</button>
+        </form>
+    </div>
+</div>
+<script>
+window.DM_OTHER_ID = {{ other_id | tojson }};
+window.DM_OTHER_NAME = {{ other_name | tojson }};
+window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};
+window.CURRENT_LIVE_DM_ID = {{ other_id | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/dm-live.js') }}"></script>
+{% endblock %}

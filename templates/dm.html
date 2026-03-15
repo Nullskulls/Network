@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ dm_display_name }}{% endblock %}
+{% block main %}
+<header class="chat-header">
+    <div class="chat-header-info">
+        <span class="chat-title">{{ dm_display_name }}</span>
+        <span class="chat-status">online</span>
+    </div>
+</header>
+<div class="chat-body">
+    <div class="messages-container messages-container-fill">
+        <div class="messages" id="dm-messages">
+            {% for msg in messages %}
+            <div class="message-wrapper {% if msg.from == 'You' %}you{% else %}orpheus{% endif %}">
+                <div class="message visible">
+                    <div class="message-body">
+                        <span class="message-sender">{{ msg.from }}</span>
+                        <p class="message-text">{{ msg.message }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
