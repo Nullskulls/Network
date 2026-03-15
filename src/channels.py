@@ -78,7 +78,7 @@ HARDCODED_DMS = {
         {"from": "You", "message": "yall are strange..."},
     ],
     "fireentity": [
-        {"from": "You", "message": "Over the past two months, records show that youâ€™ve only completed 6 or 7 reviews for Flavourtown. Being on the shipwright team is a privilege, not something you take lightly."},
+        {"from": "You", "message": "Over the past two months, records show that you’ve only completed 6 or 7 reviews for Flavourtown. Being on the shipwright team is a privilege, not something you take lightly."},
         {"from": "fireentity", "message": "AAAAHAHAAHAHA SIX SEVEN"}
     ],
     "jay": [

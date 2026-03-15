@@ -1,5 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>YSWS</title></head>
-<body><h1>YSWS</h1></body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YSWS | The Network</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/smart_dinosaur_docs.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function(){
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var saved = localStorage.getItem('darkMode');
+            var dark = saved !== null ? saved === '1' : prefersDark;
+            if (dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+        })();
+    </script>
+</head>
+<body class="name-gate">
+    <div class="landing-stars" id="landing-stars" aria-hidden="true"></div>
+    <div class="landing-blur-overlay" aria-hidden="true"></div>
+    <div class="gate-container landing-container">
+        <div class="landing-hero-wrap">
+        <div class="landing-hero">
+            <div class="landing-hero-melt">
+                <h1 class="landing-headline">
+                    <span class="landing-ys">The Network</span>
+                </h1>
+                <p class="gate-desc landing-tagline">You ship a networking related application. We ship grants to help you network!</p>
+                <p class="gate-desc landing-age">For 13 to 18 year olds.</p>
+                <section class="landing-blurb">
+                    <h2 class="landing-blurb-title">Why networking?</h2>
+                    <blockquote class="landing-blurb-quote">
+                        A hacker's best tool is how he networks. A good hacker networks with everyone and everything. One could say that it's a hacker's best friend. Networking can be many things.. Communicating with people or just literally connecting to stuff. Why don't you push the limits of what defines a network..
+                    </blockquote>
+                </section>
+            </div>
+            <p class="landing-hero-ready" aria-hidden="true">ready to hack..?</p>
+            <a href="{{ url_for('auth_login') }}" class="gate-btn gate-btn-login">Log in with Hack Club</a>
+        </div>
+        </div>
+        <dl class="landing-faq">
+            <dt>What is Hack Club?</dt>
+            <dd>Hack Club is the world's biggest community of teenage makers! We're a 501(c)(3) nonprofit, supported by folks like GitHub and donors who believe in young builders. We're fully transparent and here to help you ship.</dd>
+            <dt>Who can join?</dt>
+            <dd>Anyone 13 to 18 (inclusive)! If that's you, you're in. YSWS is part of Hack Club and runs on the same spirit: build cool stuff, connect with others, get supported.</dd>
+            <dt>Wait, grants? You give money to build stuff?</dt>
+            <dd>Yes! Ship a networking related app and you can get a grant to help you build and connect. We want to help you make things that bring people together.</dd>
+            <dt>How do I get started?</dt>
+            <dd>Share what you're making and apply for a grant. It's that simple! Submit your project and share with the community what you built!</dd>
+        </dl>
+    </div>
+    <script>
+    (function () {
+        var seed = 0;
+        function seededRandom() {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+        }
+        function hashSeed(str) {
+            var h = 0;
+            for (var i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i) | 0;
+            return Math.abs(h);
+        }
+        var el = document.getElementById("landing-stars");
+        if (!el) return;
+        seed = hashSeed("ysws-landing-bolt-stars");
+        var iconBase = "https://icons.hackclub.com/api/icons/0xea580c";
+        var n = 16;
+        var centerMin = 15;
+        var centerMax = 85;
+        var edgeBand = 18;
+        for (var i = 0; i < n; i++) {
+            var x, y;
+            var side = Math.floor(seededRandom() * 4);
+            if (side === 0) {
+                x = 2 + seededRandom() * (edgeBand - 2);
+                y = 4 + seededRandom() * 92;
+            } else if (side === 1) {
+                x = 100 - edgeBand + seededRandom() * (edgeBand - 2);
+                y = 4 + seededRandom() * 92;
+            } else if (side === 2) {
+                x = 4 + seededRandom() * 92;
+                y = 2 + seededRandom() * (edgeBand - 2);
+            } else {
+                x = 4 + seededRandom() * 92;
+                y = 100 - edgeBand + seededRandom() * (edgeBand - 2);
+            }
+            if (x >= centerMin && x <= centerMax && y >= centerMin && y <= centerMax) {
+                var dl = x - centerMin, dr = centerMax - x, dt = y - centerMin, db = centerMax - y;
+                var d = Math.min(dl, dr, dt, db);
+                if (d === dl) x = centerMin - 8;
+                else if (d === dr) x = centerMax + 8;
+                else if (d === dt) y = centerMin - 8;
+                else y = centerMax + 8;
+            }
+            var size = 28 + Math.floor(seededRandom() * 24);
+            var rot = Math.floor(seededRandom() * 360);
+            var img = document.createElement("img");
+            img.src = iconBase + "/bolt-stars";
+            img.alt = "";
+            img.className = "landing-star-img";
+            img.setAttribute("width", size);
+            img.setAttribute("height", size);
+            var wrap = document.createElement("div");
+            wrap.className = "landing-star";
+            wrap.style.left = x + "%";
+            wrap.style.top = y + "%";
+            wrap.style.width = size + "px";
+            wrap.style.height = size + "px";
+            wrap.style.transform = "rotate(" + rot + "deg)";
+            wrap.appendChild(img);
+            el.appendChild(wrap);
+        }
+    })();
+    </script>
+</body>
 </html>

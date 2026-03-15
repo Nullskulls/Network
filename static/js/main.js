@@ -10,6 +10,14 @@
             localStorage.setItem("darkMode", isDark ? "1" : "0");
         });
     }
+    if (window.matchMedia && localStorage.getItem("darkMode") === null) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+            if (localStorage.getItem("darkMode") === null) {
+                if (e.matches) document.documentElement.classList.add("dark");
+                else document.documentElement.classList.remove("dark");
+            }
+        });
+    }
 
     function scrollMessagesToBottom() {
         var container = document.querySelector(".messages-container");
