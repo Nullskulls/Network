@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}what-people-are-making{% endblock %}
+{% block main %}
+<header class="chat-header">
+    <div class="chat-header-info">
+        <span class="chat-title"># what-people-are-making</span>
+        <span class="chat-status">Projects from the community</span>
+    </div>
+</header>
+<div class="messages-container">
+    <div class="messages" id="making-messages">
+        {% for p in projects %}
+        <div class="message-wrapper making-project" data-project-id="{{ p.id }}">
+            <div class="message visible">
+                <div class="message-body message-body-project">
+                    <span class="message-sender">{{ p.submitted_by }}{% if p.submitted_by_slack_id %} <span class="message-meta">· Slack: {{ p.submitted_by_slack_id }}</span>{% endif %}</span>
+                    <p class="message-text message-text-name">{{ p.name }}</p>
+                    <p class="message-text message-text-desc">{{ p.description }}</p>
+                    <div class="message-attachment">
+                        <img src="{{ url_for('static', filename=p.screenshot_path) }}" alt="{{ p.name }}" class="project-screenshot" loading="lazy" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="making-intro message-wrapper orpheus">
+            <div class="message visible">
+                <div class="message-body">
+                    <span class="message-sender">Nullskulls</span>
+                    <p class="message-text">Share what you're building! Submit your project with a screenshot and get stickers once it's approved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="making-submit-cta">
+    <p class="making-submit-text">Submit your project and get stickers!</p>
+    <button type="button" class="cta-btn cta-submit" id="makingSubmitBtn">Submit your project</button>
+</div>
+<div class="making-modal" id="makingModal" hidden>
+    <div class="making-modal-backdrop" id="makingModalBackdrop"></div>
+    <div class="making-modal-box">
+        <h3 class="making-modal-title">Submit your project</h3>
+        <form id="makingForm" class="making-form">
+            <label class="making-label">Project name</label>
+            <input type="text" name="name" class="making-input" required placeholder="e.g. My Chat App" maxlength="200" />
+            <label class="making-label">Description</label>
+            <textarea name="description" class="making-textarea" required placeholder="What did you build? How does it help people connect?" rows="4" maxlength="2000"></textarea>
+            <label class="making-label">Screenshot</label>
+            <div class="making-file-wrap">
+                <input type="file" name="screenshot" id="makingScreenshot" class="making-file" accept=".png,.jpg,.jpeg,.gif,.webp" required />
+                <label for="makingScreenshot" class="making-file-label">Browse</label>
+                <span class="making-file-name" id="makingFileName">No file chosen</span>
+            </div>
+            <div class="making-form-actions">
+                <button type="button" class="making-btn making-btn-cancel" id="makingCancelBtn">Cancel</button>
+                <button type="submit" class="making-btn making-btn-submit">Submit & get stickers</button>
+            </div>
+        </form>
+        <p id="makingFormMessage" class="making-form-message" aria-live="polite"></p>
+    </div>
+</div>
+<script>
+window.MAKING_SUBMIT_URL = "{{ url_for('api_what_people_are_making_submit') }}";
+</script>
+<script src="{{ url_for('static', filename='js/what-people-are-making.js') }}"></script>
+{% endblock %}
+{% block scripts %}{% endblock %}
