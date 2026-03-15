@@ -121,6 +121,10 @@ def save_user(user_id, name, nickname=None, slack_id=None, avatar_url=None):
         raise e
 
 
+def upsert_user(user_id, name, nickname=None, slack_id=None, avatar_url=None):
+    save_user(user_id, name, nickname=nickname, slack_id=slack_id, avatar_url=avatar_url)
+
+
 def nickname_for_slack(slack_id):
     if not slack_id:
         return None
@@ -214,15 +218,32 @@ def save_user_from_slack(slack_id, display_name, avatar_url=None):
         return
     try:
         cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO users (id, name, nickname, slack_id, avatar_url, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
-            ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, nickname = COALESCE(EXCLUDED.nickname, users.nickname),
-                slack_id = EXCLUDED.slack_id, avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url), updated_at = NOW()
-            """,
-            (slack_id, display_name, display_name, slack_id, avatar_url),
-        )
+        cur.execute("SELECT id FROM users WHERE slack_id = %s LIMIT 1", (slack_id,))
+        row = cur.fetchone()
+        if row:
+            existing_id = row[0]
+            cur.execute(
+                """
+                UPDATE users SET
+                    nickname = COALESCE(NULLIF(%s, ''), nickname),
+                    avatar_url = COALESCE(%s, avatar_url),
+                    updated_at = NOW()
+                WHERE id = %s
+                """,
+                (display_name, avatar_url, existing_id),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO users (id, name, nickname, slack_id, avatar_url, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (id) DO UPDATE SET
+                    nickname = COALESCE(NULLIF(EXCLUDED.nickname, ''), users.nickname),
+                    avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                    updated_at = NOW()
+                """,
+                (slack_id, display_name, display_name, slack_id, avatar_url),
+            )
         conn.commit()
         cur.close()
     except Exception:

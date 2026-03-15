@@ -246,24 +246,21 @@ def auth_callback():
     first = identity.get("first_name") or ""
     last = identity.get("last_name") or ""
     name = f"{first} {last}".strip() or identity.get("primary_email") or "You"
-    nickname = None
-    if slack_id:
-        nickname = display_name_for_slack(slack_id)
-    if not nickname:
-        nickname = name
     if not user_id:
         return "No user id in profile", 400
     session["user_id"] = user_id
     session["name"] = name
-    session["nickname"] = nickname
     session["slack_id"] = slack_id
     session.permanent = True
     try:
-        db.save_user(user_id, name, nickname=nickname, slack_id=slack_id)
+        db.save_user(user_id, name, nickname=name, slack_id=slack_id)
     except Exception:
         pass
+    nickname = name
     if slack_id:
+        nickname = display_name_for_slack(slack_id) or nickname
         avatar_for_slack(slack_id)
+    session["nickname"] = nickname
     active_users[user_id] = {"name": nickname, "last_seen": time.time()}
     return redirect(url_for("app_network"))
 
