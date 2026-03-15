@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}network-faq{% endblock %}
+{% block main %}
+<header class="chat-header">
+    <div class="chat-header-info">
+        <span class="chat-title"># network-faq</span>
+        <span class="chat-status">Heidi · online</span>
+    </div>
+</header>
+<div class="messages-container">
+    <div class="messages" id="faq-messages">
+        {% for msg in existing %}
+        <div class="message-wrapper message-reveal {% if msg.from == 'Heidi' %}orpheus{% else %}you{% endif %}">
+            <div class="message">
+                <div class="message-body">
+                    <span class="message-sender">{{ msg.from }}</span>
+                    <p class="message-text">{{ msg.message }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div id="faq-extra-messages"></div>
+        <div id="faq-reply-area" class="faq-reply-area-hidden">
+            <p class="faq-prompt">Ask a question:</p>
+            <div class="faq-buttons" id="faq-buttons">
+                {% for q in questions %}
+                <button type="button" class="network-reply-btn faq-question-btn" data-question="{{ q.question }}" data-reply="{{ q.reply }}">{{ q.question }}</button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+window.FAQ_QUESTIONS = {{ questions | tojson }};
+window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/network-faq.js') }}"></script>
+{% endblock %}

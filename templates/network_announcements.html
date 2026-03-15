@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}network-announcements{% endblock %}
+{% block main %}
+<header class="chat-header">
+    <div class="chat-header-info">
+        <span class="chat-title"># network-announcements</span>
+        <span class="chat-status">Nullskulls</span>
+    </div>
+</header>
+<div class="messages-container">
+    <div class="messages" id="announcements-messages">
+        {% for item in announcements %}
+        <div class="message-wrapper orpheus">
+            <div class="message visible">
+                <div class="message-body">
+                    <span class="message-sender">{{ item.from }}{% if item.timestamp %} <span class="message-meta">· {{ item.timestamp }}</span>{% endif %}</span>
+                    <p class="message-text">{{ item.message }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
