@@ -10,6 +10,8 @@ def get_db_error():
 
 def get_db():
     global _db, _last_connection_error
+    if _db is not None and _db.closed:
+        _db = None
     if _db is None:
         _last_connection_error = None
         try:
@@ -228,7 +230,7 @@ def save_user_from_slack(slack_id, display_name, avatar_url=None):
             conn.rollback()
 
 
-def approved_projects():
+def _approved_projects_impl():
     conn = get_db()
     if not conn:
         return []
@@ -250,6 +252,18 @@ def approved_projects():
         }
         for r in rows
     ]
+
+
+def approved_projects():
+    global _db
+    try:
+        return _approved_projects_impl()
+    except Exception as e:
+        err_msg = str(e).lower()
+        if "connection already closed" in err_msg or "closed" in err_msg or type(e).__name__ == "InterfaceError":
+            _db = None
+            return _approved_projects_impl()
+        raise
 
 
 def add_project(name, description, screenshot_path, submitted_by, submitted_by_user_id=None, submitted_by_slack_id=None):
