@@ -3,12 +3,13 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt gunicorn==22.0.0
 
 COPY . .
 
-ENV FLASK_HOST=0.0.0.0
 ENV PYTHONPATH=/app/src
-EXPOSE 5000
+ENV PORT=53000
 
-CMD ["python", "-m", "src.app"]
+EXPOSE 53000
+
+CMD ["sh", "-c", "gunicorn -w 2 -k gthread --threads 4 --timeout 120 --bind 0.0.0.0:${PORT} src.app:app"]
