@@ -1628,6 +1628,24 @@ html.dark .announcements-messages .message-body {
     margin: 12px 0 0;
     font-size: 13px;
     min-height: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.making-form-message-loading::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border: 2px solid #d0d7de;
+    border-top-color: #ea580c;
+    border-radius: 50%;
+    animation: making-spin 0.7s linear infinite;
+}
+
+@keyframes making-spin {
+    to { transform: rotate(360deg); }
 }
 
 .making-form-message.success {
@@ -1719,4 +1737,9 @@ html.dark .making-file-label:hover {
 
 html.dark .making-file-name {
     color: #8b949e;
+}
+
+html.dark .making-form-message-loading::before {
+    border-color: #444;
+    border-top-color: #ea580c;
 }

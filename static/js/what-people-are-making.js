@@ -49,12 +49,22 @@
         });
     }
 
+    function setLoading(loading) {
+        if (!messageEl) return;
+        if (loading) {
+            messageEl.textContent = "Uploading…";
+            messageEl.className = "making-form-message making-form-message-loading";
+        } else {
+            messageEl.classList.remove("making-form-message-loading");
+        }
+    }
+
     if (form && submitUrl) {
         form.addEventListener("submit", function (e) {
             e.preventDefault();
             var btn = form.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
-            setMessage("Submitting…", false);
+            setLoading(true);
 
             var fd = new FormData(form);
 
@@ -80,11 +90,14 @@
                     });
                 })
                 .then(function (data) {
+                    setLoading(false);
                     showMessage(data.message || "Submitted! You'll get stickers once it's approved.", false);
                     form.reset();
+                    if (fileNameEl) fileNameEl.textContent = "No file chosen";
                     setTimeout(closeModal, 3000);
                 })
                 .catch(function (err) {
+                    setLoading(false);
                     showMessage(err.message || "Failed to submit. Try again.", true);
                 })
                 .finally(function () {
