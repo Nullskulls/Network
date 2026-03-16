@@ -1,7 +1,9 @@
-import os, time, json
+import os, time, json, logging
 import uuid, base64 , hashlib, secrets
 import urllib.request, urllib.parse, urllib.error
 import db, channels
+
+logger = logging.getLogger(__name__)
 from pathlib import Path
 from dotenv import load_dotenv
 from collections import defaultdict
@@ -75,6 +77,41 @@ def remove_stale():
         del active_users[uid]
 
 
+def fetch_slack_display_name(slack_id):
+    if not SLACK_BOT_TOKEN or not slack_id:
+        if slack_id and not SLACK_BOT_TOKEN:
+            logger.warning("fetch_slack_display_name: SLACK_BOT_TOKEN not set, cannot fetch nickname for slack_id=%s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id)
+        return None
+    try:
+        req = urllib.request.Request(
+            f"{SLACK_USERS_INFO_URL}?user={urllib.parse.quote(slack_id)}",
+            headers={
+                "Authorization": f"Bearer {SLACK_BOT_TOKEN}",
+                "User-Agent": "YSWS/1.0",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+        if not data.get("ok"):
+            logger.warning("fetch_slack_display_name: Slack API ok=false for slack_id=%s, error=%s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id, data.get("error", "unknown"))
+            return None
+        user = data.get("user") or {}
+        profile = user.get("profile") or {}
+        display_name = (
+            profile.get("display_name")
+            or profile.get("real_name")
+            or user.get("real_name")
+            or user.get("name")
+            or None
+        )
+        if not display_name:
+            logger.warning("fetch_slack_display_name: No display_name in Slack profile for slack_id=%s, falling back to real name", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id)
+        return display_name
+    except Exception as e:
+        logger.exception("fetch_slack_display_name: Failed to fetch Slack profile for slack_id=%s: %s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id, e)
+        return None
+
+
 def fetch_slack_profile(slack_id):
     if not SLACK_BOT_TOKEN or not slack_id:
         return (None, None)
@@ -110,7 +147,8 @@ def fetch_slack_profile(slack_id):
         if display_name and not db.nickname_for_slack(slack_id):
             db.save_user_from_slack(slack_id, display_name, avatar_url)
         return (display_name, avatar_url)
-    except Exception:
+    except Exception as e:
+        logger.exception("fetch_slack_profile: Failed for slack_id=%s: %s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id, e)
         return (None, None)
 
 
@@ -248,19 +286,24 @@ def auth_callback():
     name = f"{first} {last}".strip() or identity.get("primary_email") or "You"
     if not user_id:
         return "No user id in profile", 400
+    nickname = name
+    if slack_id:
+        slack_nickname = fetch_slack_display_name(slack_id)
+        if slack_nickname:
+            nickname = slack_nickname
+        else:
+            logger.warning("auth_callback: Could not fetch Slack display name for slack_id=%s, using real name", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id)
     session["user_id"] = user_id
     session["name"] = name
+    session["nickname"] = nickname
     session["slack_id"] = slack_id
     session.permanent = True
     try:
-        db.save_user(user_id, name, nickname=name, slack_id=slack_id)
-    except Exception:
-        pass
-    nickname = name
+        db.save_user(user_id, name, nickname=nickname, slack_id=slack_id)
+    except Exception as e:
+        logger.exception("auth_callback: save_user failed for user_id=%s: %s", user_id[:16] + "..." if len(user_id) > 16 else user_id, e)
     if slack_id:
-        nickname = display_name_for_slack(slack_id) or nickname
         avatar_for_slack(slack_id)
-    session["nickname"] = nickname
     active_users[user_id] = {"name": nickname, "last_seen": time.time()}
     return redirect(url_for("app_network"))
 
@@ -408,7 +451,7 @@ def api_active_users():
 @app.route("/api/users/heartbeat", methods=["POST"])
 def api_heartbeat():
     uid = session.get("user_id")
-    name = session.get("nickname") or session.get("name")
+    name = session.get("nickname") or session.get("name") or "User"
     if uid and name:
         if uid not in active_users:
             active_users[uid] = {"name": name, "last_seen": time.time()}

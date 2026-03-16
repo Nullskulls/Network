@@ -1,5 +1,7 @@
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 _db = None
 _last_connection_error = None
 
@@ -59,6 +61,7 @@ def setup_tables():
             name TEXT NOT NULL,
             nickname TEXT NOT NULL DEFAULT 'User',
             slack_id TEXT,
+            avatar_url TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
@@ -232,21 +235,10 @@ def save_user_from_slack(slack_id, display_name, avatar_url=None):
                 """,
                 (display_name, avatar_url, existing_id),
             )
-        else:
-            cur.execute(
-                """
-                INSERT INTO users (id, name, nickname, slack_id, avatar_url, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
-                ON CONFLICT (id) DO UPDATE SET
-                    nickname = COALESCE(NULLIF(EXCLUDED.nickname, ''), users.nickname),
-                    avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
-                    updated_at = NOW()
-                """,
-                (slack_id, display_name, display_name, slack_id, avatar_url),
-            )
         conn.commit()
         cur.close()
-    except Exception:
+    except Exception as e:
+        logger.exception("save_user_from_slack failed for slack_id=%s: %s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id, e)
         if conn:
             conn.rollback()
 
