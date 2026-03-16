@@ -66,6 +66,11 @@ def ping_active():
             active_users[uid]["last_seen"] = time.time()
 
 
+@app.errorhandler(404)
+def not_found(_e):
+    return redirect(url_for("index"))
+
+
 def dm_key(id1, id2):
     return tuple(sorted([id1, id2]))
 
