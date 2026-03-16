@@ -2,11 +2,11 @@ import os, time, json, logging, threading
 import uuid, base64 , hashlib, secrets
 import urllib.request, urllib.parse, urllib.error
 import db, channels
-
-logger = logging.getLogger(__name__)
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, render_template, redirect, url_for, request, session, jsonify
+
+logger = logging.getLogger(__name__)
 
 
 _load_env = Path(__file__).resolve().parent.parent / ".env"
@@ -153,7 +153,8 @@ def login_redirect_url():
 def index():
     if session.get("user_id"):
         return redirect(url_for("app_network"))
-    return render_template("index.html")
+    canonical = (os.environ.get("APP_URL", "").rstrip("/") or request.url_root.rstrip("/"))
+    return render_template("index.html", canonical_url=canonical)
 
 
 @app.route("/auth/login")
@@ -403,6 +404,8 @@ def app_dm_live(other_id):
 
 @app.route("/api/users/active")
 def api_active_users():
+    if not session.get("user_id"):
+        return jsonify({"error": "unauthorized"}), 401
     remove_stale()
     me_id = session.get("user_id")
     users = []
@@ -430,6 +433,8 @@ def api_heartbeat():
 
 @app.route("/api/dm/<user_id>", methods=["GET"])
 def api_dm_get(user_id):
+    if not session.get("user_id"):
+        return jsonify({"error": "unauthorized"}), 401
     if user_id not in channels.HARDCODED_DMS:
         return jsonify({"error": "not found"}), 404
     messages = list(channels.HARDCODED_DMS[user_id])
@@ -482,6 +487,8 @@ def api_network_faq_post():
 
 @app.route("/api/network-faq/extra")
 def api_network_faq_extra():
+    if not session.get("user_id"):
+        return jsonify({"error": "unauthorized"}), 401
     return jsonify({"messages": list(faq_user_messages)})
 
 
