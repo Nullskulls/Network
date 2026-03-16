@@ -128,6 +128,22 @@ def upsert_user(user_id, name, nickname=None, slack_id=None, avatar_url=None):
     save_user(user_id, name, nickname=nickname, slack_id=slack_id, avatar_url=avatar_url)
 
 
+def nickname_for_user(user_id):
+    if not user_id:
+        return None
+    conn = get_db()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT nickname FROM users WHERE id = %s LIMIT 1", (user_id,))
+        row = cur.fetchone()
+        cur.close()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
 def nickname_for_slack(slack_id):
     if not slack_id:
         return None
@@ -272,8 +288,7 @@ def approved_projects():
     try:
         return _approved_projects_impl()
     except Exception as e:
-        err_msg = str(e).lower()
-        if "connection already closed" in err_msg or "closed" in err_msg or type(e).__name__ == "InterfaceError":
+        if type(e).__name__ in ("InterfaceError", "OperationalError"):
             _db = None
             return _approved_projects_impl()
         raise
@@ -321,16 +336,21 @@ def messages_between(user_id_1, user_id_2):
     conn = get_db()
     if not conn:
         return []
-    cur = conn.cursor()
-    cur.execute(
-        """SELECT from_user_id, from_user_name, message FROM dm_messages
-           WHERE (from_user_id = %s AND to_user_id = %s) OR (from_user_id = %s AND to_user_id = %s)
-           ORDER BY created_at""",
-        (user_id_1, user_id_2, user_id_2, user_id_1),
-    )
-    rows = cur.fetchall()
-    cur.close()
-    return [{"from": r[1], "message": r[2]} for r in rows]
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT from_user_id, from_user_name, message FROM dm_messages
+               WHERE (from_user_id = %s AND to_user_id = %s) OR (from_user_id = %s AND to_user_id = %s)
+               ORDER BY created_at""",
+            (user_id_1, user_id_2, user_id_2, user_id_1),
+        )
+        rows = cur.fetchall()
+        cur.close()
+        return [{"from": r[1], "message": r[2]} for r in rows]
+    except Exception:
+        if conn:
+            conn.rollback()
+        return []
 
 
 def mark_project_approved(project_id):

@@ -1,4 +1,4 @@
-import os, time, json, logging
+import os, time, json, logging, threading
 import uuid, base64 , hashlib, secrets
 import urllib.request, urllib.parse, urllib.error
 import db, channels
@@ -6,7 +6,6 @@ import db, channels
 logger = logging.getLogger(__name__)
 from pathlib import Path
 from dotenv import load_dotenv
-from collections import defaultdict
 from flask import Flask, render_template, redirect, url_for, request, session, jsonify
 
 
@@ -44,18 +43,20 @@ def sidebar_context():
 
 
 active_users = {}
-live_dm_store = defaultdict(list)
 faq_user_messages = []
 
 ACTIVE_TIMEOUT_SEC = 30
+_setup_lock = threading.Lock()
 
 
 @app.before_request
 def setup_once():
     if not getattr(setup_once, "_done", False):
-        db.setup_tables()
-        os.makedirs(os.path.join(app.static_folder, UPLOAD_SUBDIR), exist_ok=True)
-        setup_once._done = True
+        with _setup_lock:
+            if not getattr(setup_once, "_done", False):
+                db.setup_tables()
+                os.makedirs(os.path.join(app.static_folder, UPLOAD_SUBDIR), exist_ok=True)
+                setup_once._done = True
 
 
 @app.before_request
@@ -71,50 +72,11 @@ def not_found(_e):
     return redirect(url_for("index"))
 
 
-def dm_key(id1, id2):
-    return tuple(sorted([id1, id2]))
-
-
 def remove_stale():
     now = time.time()
     expired = [uid for uid, data in active_users.items() if now - data["last_seen"] > ACTIVE_TIMEOUT_SEC]
     for uid in expired:
         del active_users[uid]
-
-
-def fetch_slack_display_name(slack_id):
-    if not SLACK_BOT_TOKEN or not slack_id:
-        if slack_id and not SLACK_BOT_TOKEN:
-            logger.warning("fetch_slack_display_name: SLACK_BOT_TOKEN not set, cannot fetch nickname for slack_id=%s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id)
-        return None
-    try:
-        req = urllib.request.Request(
-            f"{SLACK_USERS_INFO_URL}?user={urllib.parse.quote(slack_id)}",
-            headers={
-                "Authorization": f"Bearer {SLACK_BOT_TOKEN}",
-                "User-Agent": "YSWS/1.0",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode())
-        if not data.get("ok"):
-            logger.warning("fetch_slack_display_name: Slack API ok=false for slack_id=%s, error=%s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id, data.get("error", "unknown"))
-            return None
-        user = data.get("user") or {}
-        profile = user.get("profile") or {}
-        display_name = (
-            profile.get("display_name")
-            or profile.get("real_name")
-            or user.get("real_name")
-            or user.get("name")
-            or None
-        )
-        if not display_name:
-            logger.warning("fetch_slack_display_name: No display_name in Slack profile for slack_id=%s, falling back to real name", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id)
-        return display_name
-    except Exception as e:
-        logger.exception("fetch_slack_display_name: Failed to fetch Slack profile for slack_id=%s: %s", slack_id[:8] + "..." if len(slack_id) > 8 else slack_id, e)
-        return None
 
 
 def fetch_slack_profile(slack_id):
@@ -292,8 +254,9 @@ def auth_callback():
     if not user_id:
         return "No user id in profile", 400
     nickname = name
+    avatar_url = None
     if slack_id:
-        slack_nickname = fetch_slack_display_name(slack_id)
+        slack_nickname, avatar_url = fetch_slack_profile(slack_id)
         if slack_nickname:
             nickname = slack_nickname
         else:
@@ -304,11 +267,9 @@ def auth_callback():
     session["slack_id"] = slack_id
     session.permanent = True
     try:
-        db.save_user(user_id, name, nickname=nickname, slack_id=slack_id)
+        db.save_user(user_id, name, nickname=nickname, slack_id=slack_id, avatar_url=avatar_url)
     except Exception as e:
         logger.exception("auth_callback: save_user failed for user_id=%s: %s", user_id[:16] + "..." if len(user_id) > 16 else user_id, e)
-    if slack_id:
-        avatar_for_slack(slack_id)
     active_users[user_id] = {"name": nickname, "last_seen": time.time()}
     return redirect(url_for("app_network"))
 
@@ -414,6 +375,8 @@ def api_what_people_are_making_submit():
 
 @app.route("/api/what-people-are-making", methods=["GET"])
 def api_what_people_are_making_list():
+    if not session.get("user_id"):
+        return jsonify({"error": "unauthorized"}), 401
     projects = projects_for_page()
     return jsonify({"projects": projects})
 
@@ -434,7 +397,7 @@ def app_dm_live(other_id):
     if not session.get("user_id"):
         return redirect(url_for("index"))
     other = active_users.get(other_id, {})
-    other_name = other.get("name", "Unknown")
+    other_name = other.get("name") or db.nickname_for_user(other_id) or "Unknown"
     return render_template("dm_live.html", other_id=other_id, other_name=other_name)
 
 
@@ -492,8 +455,6 @@ def api_dm_live_post(other_id):
     msg = (data.get("message") or "").strip()
     if not msg:
         return jsonify({"error": "empty message"}), 400
-    key = dm_key(me_id, other_id)
-    live_dm_store[key].append({"from_id": me_id, "from_name": me_name, "message": msg})
     db.add_dm_message(me_id, me_name, other_id, msg)
     return jsonify({"ok": True, "message": {"from": me_name, "message": msg}})
 
@@ -505,17 +466,15 @@ def api_network_faq_post():
     me = session.get("nickname") or session.get("name") or "You"
     data = request.get_json() or {}
     question = (data.get("question") or "").strip()
-    reply = (data.get("reply") or "").strip()
     if not question:
         return jsonify({"error": "empty question"}), 400
-    heidi_reply = reply
+    heidi_reply = ""
+    for q in channels.NETWORK_FAQ_QUESTIONS:
+        if q["question"] == question:
+            heidi_reply = q["reply"]
+            break
     if not heidi_reply:
-        for q in channels.NETWORK_FAQ_QUESTIONS:
-            if q["question"] == question:
-                heidi_reply = q["reply"]
-                break
-        if not heidi_reply:
-            heidi_reply = "Thanks for asking! I'll get back to you on that."
+        heidi_reply = "Thanks for asking! I'll get back to you on that."
     faq_user_messages.append({"from": me, "message": question})
     faq_user_messages.append({"from": "Heidi", "message": heidi_reply})
     return jsonify({"ok": True, "user_message": {"from": me, "message": question}, "heidi_reply": {"from": "Heidi", "message": heidi_reply}})

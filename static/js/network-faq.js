@@ -107,11 +107,12 @@
         });
     }
 
-    runInitialReveal();
-    loadExtra();
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", runInitialReveal);
+    } else {
+        runInitialReveal();
     }
+    loadExtra();
     window.addEventListener("load", function () {
         scrollToBottom();
     });
