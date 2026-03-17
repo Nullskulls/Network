@@ -422,12 +422,13 @@ def api_active_users():
 @app.route("/api/users/heartbeat", methods=["POST"])
 def api_heartbeat():
     uid = session.get("user_id")
+    if not uid:
+        return jsonify({"error": "unauthorized"}), 401
     name = session.get("nickname") or session.get("name") or "User"
-    if uid and name:
-        if uid not in active_users:
-            active_users[uid] = {"name": name, "last_seen": time.time()}
-        else:
-            active_users[uid]["last_seen"] = time.time()
+    if uid not in active_users:
+        active_users[uid] = {"name": name, "last_seen": time.time()}
+    else:
+        active_users[uid]["last_seen"] = time.time()
     return jsonify({"ok": True})
 
 
