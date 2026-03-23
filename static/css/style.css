@@ -157,6 +157,21 @@ a.workspace-name-link:hover {
     background: #f6f8fa;
 }
 
+.sidebar-logout-form {
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar-logout-form button.sidebar-logout {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
 .nav-section {
     margin-bottom: 16px;
 }

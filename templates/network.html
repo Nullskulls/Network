@@ -21,7 +21,7 @@
         <div id="network-reply-area"></div>
     </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 window.NETWORK_REPLIES = {{ network_replies | tojson }};
 window.NETWORK_FIRST_QUESTION_OPTIONS = {{ network_first_question | tojson }};
 window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};

@@ -18,7 +18,7 @@
         </form>
     </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 window.DM_OTHER_ID = {{ other_id | tojson }};
 window.DM_OTHER_NAME = {{ other_name | tojson }};
 window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};

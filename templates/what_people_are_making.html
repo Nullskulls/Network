@@ -13,11 +13,11 @@
         <div class="message-wrapper making-project" data-project-id="{{ p.id }}">
             <div class="message visible">
                 <div class="message-body message-body-project">
-                    <span class="message-sender">{{ p.submitted_by }}{% if p.submitted_by_slack_id %} <span class="message-meta">· Slack: {{ p.submitted_by_slack_id }}</span>{% endif %}</span>
+                    <span class="message-sender">{{ p.submitted_by }}</span>
                     <p class="message-text message-text-name">{{ p.name }}</p>
                     <p class="message-text message-text-desc">{{ p.description }}</p>
                     <div class="message-attachment">
-                        <img src="{{ url_for('static', filename=p.screenshot_path) }}" alt="{{ p.name }}" class="project-screenshot" loading="lazy" />
+                        <img src="{{ url_for('served_content', filename=p.screenshot_path) }}" alt="{{ p.name }}" class="project-screenshot" loading="lazy" />
                     </div>
                 </div>
             </div>
@@ -60,7 +60,7 @@
         <p id="makingFormMessage" class="making-form-message" aria-live="polite"></p>
     </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 window.MAKING_SUBMIT_URL = "{{ url_for('api_what_people_are_making_submit') }}";
 </script>
 <script src="{{ url_for('static', filename='js/what-people-are-making.js') }}"></script>

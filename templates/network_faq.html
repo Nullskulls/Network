@@ -30,7 +30,7 @@
         </div>
     </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 window.FAQ_QUESTIONS = {{ questions | tojson }};
 window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};
 </script>

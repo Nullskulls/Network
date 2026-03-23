@@ -8,6 +8,7 @@
     var REVEAL_DELAY_MS = 400;
     var REVEAL_TRANSITION_MS = 500;
     var extraRenderedCount = 0;
+    var csrfToken = window.CSRF_TOKEN || "";
 
     function scrollToBottom() {
         if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -91,7 +92,10 @@
             if (!question) return;
             fetch("/api/network-faq", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": csrfToken
+                },
                 body: JSON.stringify({ question: question, reply: reply || "" }),
                 credentials: "same-origin"
             })

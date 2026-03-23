@@ -4,6 +4,7 @@
     var messagesEl = document.getElementById("dm-messages");
     var form = document.getElementById("dm-form");
     var input = document.getElementById("dm-input");
+    var csrfToken = window.CSRF_TOKEN || "";
 
     if (!userId || !form) return;
 
@@ -34,7 +35,11 @@
         input.value = "";
         fetch("/api/dm/" + encodeURIComponent(userId), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": csrfToken
+            },
+            credentials: "same-origin",
             body: JSON.stringify({ message: text })
         })
             .then(function (r) { return r.json(); })

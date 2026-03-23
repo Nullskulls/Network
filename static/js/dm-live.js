@@ -1,11 +1,11 @@
 (function () {
     var otherId = window.DM_OTHER_ID;
-    var otherName = window.DM_OTHER_NAME;
     var currentUser = window.CURRENT_USER || "You";
     var messagesEl = document.getElementById("dm-messages");
     var containerEl = document.getElementById("dm-messages-container");
     var form = document.getElementById("dm-form");
     var input = document.getElementById("dm-input");
+    var csrfToken = window.CSRF_TOKEN || "";
 
     if (!otherId || !form || !messagesEl) return;
 
@@ -57,7 +57,11 @@
         input.value = "";
         fetch("/api/dm/live/" + encodeURIComponent(otherId), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": csrfToken
+            },
+            credentials: "same-origin",
             body: JSON.stringify({ message: text })
         })
             .then(function (r) { return r.json(); })

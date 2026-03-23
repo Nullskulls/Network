@@ -91,6 +91,25 @@ def setup_tables():
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS custom_dm_messages (
+            id SERIAL PRIMARY KEY,
+            from_user_id TEXT NOT NULL,
+            to_user_id TEXT NOT NULL,
+            from_user_name TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS faq_messages (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            from_user_name TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
     conn.commit()
     cur.close()
 
@@ -100,7 +119,7 @@ def save_user(user_id, name, nickname=None, slack_id=None, avatar_url=None):
         nickname = name
     conn = get_db()
     if not conn:
-        return
+        raise RuntimeError(get_db_error() or "database unavailable")
     try:
         cur = conn.cursor()
         cur.execute(
@@ -318,7 +337,7 @@ def add_project(name, description, screenshot_path, submitted_by, submitted_by_u
 def add_dm_message(from_user_id, from_user_name, to_user_id, message):
     conn = get_db()
     if not conn:
-        return
+        return False
     try:
         cur = conn.cursor()
         cur.execute(
@@ -327,9 +346,11 @@ def add_dm_message(from_user_id, from_user_name, to_user_id, message):
         )
         conn.commit()
         cur.close()
+        return True
     except Exception:
         if conn:
             conn.rollback()
+        return False
 
 
 def messages_between(user_id_1, user_id_2):
@@ -368,3 +389,120 @@ def mark_project_approved(project_id):
         if conn:
             conn.rollback()
         return False
+
+
+def add_custom_dm_message(from_user_id, to_user_id, from_user_name, message):
+    """Store a custom DM message sent by a user to a hardcoded DM contact."""
+    conn = get_db()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO custom_dm_messages (from_user_id, to_user_id, from_user_name, message)
+               VALUES (%s, %s, %s, %s) RETURNING id""",
+            (from_user_id, to_user_id, from_user_name, message),
+        )
+        msg_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        return msg_id
+    except Exception as e:
+        logger.exception("add_custom_dm_message failed: %s", e)
+        if conn:
+            conn.rollback()
+        return None
+
+
+def get_custom_dm_messages(from_user_id, to_user_id):
+    """Retrieve custom DM messages sent by from_user_id to to_user_id."""
+    conn = get_db()
+    if not conn:
+        return []
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT from_user_name, message FROM custom_dm_messages
+               WHERE from_user_id = %s AND to_user_id = %s
+               ORDER BY created_at""",
+            (from_user_id, to_user_id),
+        )
+        rows = cur.fetchall()
+        cur.close()
+        return [{"from": r[0], "message": r[1]} for r in rows]
+    except Exception as e:
+        logger.exception("get_custom_dm_messages failed: %s", e)
+        return []
+
+
+def add_faq_message(user_id, from_user_name, message):
+    """Store a FAQ question/answer exchange."""
+    conn = get_db()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO faq_messages (user_id, from_user_name, message)
+               VALUES (%s, %s, %s) RETURNING id""",
+            (user_id, from_user_name, message),
+        )
+        msg_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        return msg_id
+    except Exception as e:
+        logger.exception("add_faq_message failed: %s", e)
+        if conn:
+            conn.rollback()
+        return None
+
+
+def add_faq_user_and_heidi(user_id, user_name, question, heidi_name, heidi_message):
+    """Atomically store user question and Heidi reply (single transaction)."""
+    conn = get_db()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO faq_messages (user_id, from_user_name, message)
+               VALUES (%s, %s, %s) RETURNING id""",
+            (user_id, user_name, question),
+        )
+        user_row_id = cur.fetchone()[0]
+        cur.execute(
+            """INSERT INTO faq_messages (user_id, from_user_name, message)
+               VALUES (%s, %s, %s) RETURNING id""",
+            (user_id, heidi_name, heidi_message),
+        )
+        heidi_row_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        return (user_row_id, heidi_row_id)
+    except Exception as e:
+        logger.exception("add_faq_user_and_heidi failed: %s", e)
+        if conn:
+            conn.rollback()
+        return None
+
+
+def get_faq_messages(user_id):
+    """Retrieve all FAQ messages for a specific user."""
+    conn = get_db()
+    if not conn:
+        return []
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT from_user_name, message FROM faq_messages
+               WHERE user_id = %s
+               ORDER BY created_at""",
+            (user_id,),
+        )
+        rows = cur.fetchall()
+        cur.close()
+        return [{"from": r[0], "message": r[1]} for r in rows]
+    except Exception as e:
+        logger.exception("get_faq_messages failed: %s", e)
+        return []

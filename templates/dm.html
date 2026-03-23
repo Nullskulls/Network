@@ -7,8 +7,8 @@
         <span class="chat-status">online</span>
     </div>
 </header>
-<div class="chat-body">
-    <div class="messages-container messages-container-fill">
+<div class="chat-body chat-body-with-compose">
+    <div class="messages-container" id="dm-messages-container">
         <div class="messages" id="dm-messages">
             {% for msg in messages %}
             <div class="message-wrapper {% if msg.from == 'You' %}you{% else %}orpheus{% endif %}">
@@ -22,5 +22,16 @@
             {% endfor %}
         </div>
     </div>
+    <div class="dm-compose">
+        <form id="dm-form" class="dm-compose-form">
+            <input type="text" id="dm-input" class="dm-input" placeholder="Message {{ dm_display_name }}..." autocomplete="off">
+            <button type="submit" class="dm-send-btn">Send</button>
+        </form>
+    </div>
 </div>
+<script nonce="{{ csp_nonce }}">
+window.DM_USER_ID = {{ dm_user_id | tojson }};
+window.CURRENT_USER = {{ (session.get('nickname') or session.get('name') or 'You') | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/dm.js') }}"></script>
 {% endblock %}

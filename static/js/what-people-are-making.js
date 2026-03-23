@@ -18,6 +18,7 @@
     var cancelBtn = document.getElementById("makingCancelBtn");
     var messageEl = document.getElementById("makingFormMessage");
     var submitUrl = window.MAKING_SUBMIT_URL;
+    var csrfToken = window.CSRF_TOKEN || "";
 
     function openModal() {
         if (modal) modal.removeAttribute("hidden");
@@ -72,6 +73,7 @@
                 method: "POST",
                 body: fd,
                 credentials: "same-origin",
+                headers: { "X-CSRF-Token": csrfToken }
             })
                 .then(function (res) {
                     var ct = res.headers.get("Content-Type") || "";

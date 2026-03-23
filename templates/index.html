@@ -21,7 +21,7 @@
     <meta name="twitter:image:alt" content="Hack Club dinosaur mascot sealing a letter with wax">
     <link rel="icon" href="{{ url_for('static', filename='img/smart_dinosaur_docs.png') }}" type="image/png">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script>
+    <script nonce="{{ csp_nonce }}">
         (function(){
             var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
             var saved = localStorage.getItem('darkMode');
@@ -64,7 +64,7 @@
             <dd>Share what you're making and apply for a grant. It's that simple! Submit your project and share with the community what you built!</dd>
         </dl>
     </div>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     (function () {
         var seed = 0;
         function seededRandom() {

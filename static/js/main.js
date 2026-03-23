@@ -1,6 +1,7 @@
 (function () {
     var HEARTBEAT_INTERVAL = 8000;
     var ACTIVE_USERS_INTERVAL = 6000;
+    var csrfToken = window.CSRF_TOKEN || "";
 
     var themeToggle = document.getElementById("themeToggle");
     if (themeToggle) {
@@ -43,7 +44,11 @@
     }
 
     function ping() {
-        fetch("/api/users/heartbeat", { method: "POST", credentials: "same-origin" }).catch(function () {});
+        fetch("/api/users/heartbeat", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRF-Token": csrfToken }
+        }).catch(function () {});
     }
 
     function loadActiveUsers() {
