@@ -84,6 +84,13 @@ HARDCODED_DMS = {
     "jay": [
         {"from": "jay", "message": "goo goo ga ga"},
         {"from": "You", "message": "jay dont"},
+    ],
+    "kuzu": [
+        {"from": "kuzu", "message": "I just have one question for you, ARE YOU READY?"},
+        {"from": "You", "message": "Ready for what?"},
+        {"from": "kuzu", "message": "ARE YOU READY FOR THIS SUNDAY NIGHT WHEN WWE CHAMP JOHN CENA DEFENDS HIS TITLE"},
+        {"from": "kuzu", "message": "IN THE WWE SUUUPERSLAMMMM"},
+        {"from": "You", "message": "???"},
     ]
 }
 
@@ -94,6 +101,7 @@ HARDCODED_DM_NAMES = {
     "neon": "neon",
     "fireentity": "fireentity",
     "jay": "jay",
+    "kuzu": "kuzu",
 }
 
 AVATARS = {
@@ -105,4 +113,5 @@ AVATARS = {
     "neon": "img/neon.png",
     "fireentity": "img/fireentity.png",
     "jay": "img/jay.png",
+    "kuzu": "img/kuzu.png",
 }
